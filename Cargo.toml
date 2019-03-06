@@ -10,3 +10,4 @@ midir = "0.5.0"
 [lib]
 name = "korgnanokontrol2"
 path = "src/lib.rs"
+crate-type = ["cdylib"]

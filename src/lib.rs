@@ -36,7 +36,20 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn open(&mut self) -> Result<(), Box<Error>> {
+    pub fn new() -> Self {
+        Connection {
+            midi_input_connection: None,
+            midi_output_connection: None,
+        }
+    }
+
+    pub fn open<F>(
+        &mut self,
+        callback: F
+    ) -> Result<(), Box<Error>> 
+    where
+        F: Fn(u64, &[u8]) + Send + 'static {
+
         let midi_input = MidiInput::new("input")?;
         let midi_output = MidiOutput::new("output")?;
 
@@ -56,8 +69,8 @@ impl Connection {
             return Result::Err(Box::new(KorgError("Multiple MIDI output ports found.".into())));
         }
 
-        self.midi_input_connection = midi_input.connect(0, "input_port", |stamp, message, _| {
-            println!("{}: {:?} (len = {})", stamp, message, message.len());
+        self.midi_input_connection = midi_input.connect(0, "input_port", move |stamp, message, _| {
+            callback(stamp, message);
         }, ()).ok();
 
         self.midi_output_connection = midi_output.connect(0, "output_port").ok();
