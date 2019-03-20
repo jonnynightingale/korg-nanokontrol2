@@ -11,3 +11,7 @@ midir = "0.5.0"
 name = "korgnanokontrol2"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
+
+[[bin]]
+name = "nanotest"
+path = "src/main.rs"
