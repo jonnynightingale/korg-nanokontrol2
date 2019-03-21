@@ -1,10 +1,11 @@
-mod lib;
+extern crate korgnanokontrol2;
 
 use std::thread::sleep;
 use std::time::Duration;
 use std::io::stdin;
 use std::error::Error;
-use lib::{Connection, KorgNanokontrol2State};
+use korgnanokontrol2::connection::Connection;
+use korgnanokontrol2::parameters::Parameters;
 
 fn main() {
     match run() {
@@ -17,9 +18,9 @@ fn run() -> Result<(), Box<Error>> {
     let mut connection = Connection::new();
     connection.open(|stamp, message| {
         if message.len() > 50 {
-            let mut state = KorgNanokontrol2State::default();
-            state.parse_scene_dump(&message);
-            println!("{:#?}", state);
+            let mut parameters = Parameters::default();
+            parameters.parse_scene_dump(&message).is_err();
+            println!("{:#?}", parameters);
         } else {
             println!("{}: {:02X?} (len = {})", stamp, message, message.len());
         }
