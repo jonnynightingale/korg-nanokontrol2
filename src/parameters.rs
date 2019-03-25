@@ -1,4 +1,5 @@
 use super::*;
+use super::error::Error;
 
 #[derive(Default, Debug)]
 pub struct ButtonParameters {
@@ -49,13 +50,13 @@ pub struct Parameters {
 }
 
 impl Parameters {
-    pub fn parse_scene_dump<'a>(&mut self, dump: &[u8]) -> Result<(), String> {
+    pub fn parse_scene_dump<'a>(&mut self, dump: &[u8]) -> Result<()> {
         let raw_scene_data: &[u8] = &dump[13..401];
 
         let global_channel_val = Self::get_raw_scene_data_value(&raw_scene_data, 0);
         self.global_channel = match global_channel_val {
             n if n < 16 => n,
-            n => return Err(format!("Invalid global channel: {}", n)),
+            n => return Err(Error::InvalidGlobalChannel(n)),
         };
 
         let control_mode_val = Self::get_raw_scene_data_value(&raw_scene_data, 1);
@@ -160,7 +161,7 @@ impl Parameters {
     }
 }
 
-fn parse_control_mode(val: u8) -> Result<ControlMode, String> {
+fn parse_control_mode(val: u8) -> Result<ControlMode> {
     match val {
         0 => Ok(ControlMode::CcMode),
         1 => Ok(ControlMode::Cubase),
@@ -168,22 +169,22 @@ fn parse_control_mode(val: u8) -> Result<ControlMode, String> {
         3 => Ok(ControlMode::Live),
         4 => Ok(ControlMode::ProTools),
         5 => Ok(ControlMode::Sonar),
-        n => Err(format!("Invalid control mode: {}.", n)),
+        n => Err(Error::InvalidControlMode(n)),
     }
 }
 
-fn parse_led_mode(val: u8) -> Result<LedMode, String> {
+fn parse_led_mode(val: u8) -> Result<LedMode> {
     match val {
         0 => Ok(LedMode::Internal),
         1 => Ok(LedMode::External),
-        n => Err(format!("Invalid LED mode: {}.", n)),
+        n => Err(Error::InvalidLedMode(n)),
     }
 }
 
-fn parse_midi_channel_incl_global(val: u8) -> Result<MidiChannel, String> {
+fn parse_midi_channel_incl_global(val: u8) -> Result<MidiChannel> {
     match val {
         16 => Ok(MidiChannel::Global),
         n if n < 16 => Ok(MidiChannel::Custom(n)),
-        n => Err(format!("Invalid MIDI channel: {}.", n)),
+        n => Err(Error::InvalidMidiChannel(n)),
     }
 }

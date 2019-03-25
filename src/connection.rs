@@ -1,17 +1,7 @@
-use std::error::Error;
-use std::fmt;
 use midir::{MidiInput, MidiOutput, MidiInputConnection, MidiOutputConnection};
 
-#[derive(Debug)]
-pub struct ConnectionError(String);
-
-impl fmt::Display for ConnectionError {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "Korg nanoKONTROL2 Error: {}", self.0)
-    }
-}
-
-impl Error for ConnectionError {}
+use super::error::Error;
+use super::Result;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Command {
@@ -41,30 +31,26 @@ impl Connection {
         }
     }
 
-    pub fn open<F>(
-        &mut self,
-        callback: F
-    ) -> Result<(), Box<Error>> 
-    where
-        F: Fn(u64, &[u8]) + Send + 'static {
+    pub fn open<F>(&mut self, callback: F) -> Result<()> 
+    where F: Fn(u64, &[u8]) + Send + 'static {
 
         let midi_input = MidiInput::new("input")?;
         let midi_output = MidiOutput::new("output")?;
 
         if midi_input.port_count() == 0 {
-            return Result::Err(Box::new(ConnectionError("No MIDI input ports found.".into())));
+            return Err(Error::NoMidiInputPortFound);
         }
 
         if midi_input.port_count() > 1 {
-            return Result::Err(Box::new(ConnectionError("Multiple MIDI input ports found.".into())));
+            return Err(Error::MultipleMidiInputPortsFound);
         }
 
         if midi_output.port_count() == 0 {
-            return Result::Err(Box::new(ConnectionError("No MIDI ouput ports found.".into())));
+            return Err(Error::NoMidiOutputPortFound);
         }
 
         if midi_output.port_count() > 1 {
-            return Result::Err(Box::new(ConnectionError("Multiple MIDI output ports found.".into())));
+            return Err(Error::MultipleMidiOutputPortsFound);
         }
 
         self.midi_input_connection = midi_input.connect(0, "input_port", move |stamp, message, _| {
@@ -94,10 +80,7 @@ impl Connection {
         };
     }
 
-    pub fn get_slider_value_raw(
-        &mut self,
-        slider_index: u8
-    ) -> Result<(), Box<Error>> {
+    pub fn get_slider_value_raw(&mut self, slider_index: u8) -> Result<()> {
         let message = Self::generate_two_byte_data_message(
             0x00,
             Command::DataDumpRequest,
