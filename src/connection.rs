@@ -103,7 +103,7 @@ impl Connection {
         mut system_exclusive_callback: G,
     ) -> Result<()> where
         F: FnMut(u64, u8, u8, u8) + Send + 'static,
-        G: FnMut(u64, u8, &[u8]) + Send + 'static {
+        G: FnMut(u64, u8, u8, &[u8]) + Send + 'static {
 
         let midi_input = MidiInput::new("input")?;
         let midi_output = MidiOutput::new("output")?;
@@ -141,10 +141,11 @@ impl Connection {
                     };
                     control_change_callback(timestamp, midi_channel, control_change, value);
                 },
-                Some((_, 0xF0)) => {
-                    if let Some((_, &0x42)) = iter.next() {
-                        return;
-                    }
+                Some((_, &0xF0)) => {
+                    match iter.next() {
+                        Some((_, &0x42)) => (),
+                        _ => return,
+                    };
 
                     let global_channel = match iter.next() {
                         Some((_, &n)) if n & 0b1111_0000 == 0x40 => n & 0b0000_1111,
@@ -161,9 +162,10 @@ impl Connection {
                         false => {
                             let (data_start_index, num_data): (usize, usize) = match iter.next() {
                                 Some((_, &0x7F)) => {
-                                    if let Some((_, &0x02)) = iter.next() {
-                                        return;
-                                    }
+                                    match iter.next() {
+                                        Some((_, &0x02)) => (),
+                                        _ => return,
+                                    };
                                     let msb: usize = match iter.next() {
                                         Some((_, &n)) => n as usize,
                                         None => return,
@@ -172,10 +174,10 @@ impl Connection {
                                         Some((i, &n)) => (i, n as usize),
                                         None => return,
                                     };
-                                    let num = (msb << 8) | lsb;
-                                    (index + 1, num)
+                                    let num = (msb << 7) | lsb;
+                                    (index + 2, num)
                                 },
-                                Some((i, &n)) => (i + 1, n as usize),
+                                Some((i, &n)) => (i + 2, n as usize),
                                 None => return,
                             };
                             if message.len() < data_start_index + num_data {
@@ -185,11 +187,12 @@ impl Connection {
                         },
                     };
 
-                    if let Some((_, &0xF7)) = iter.nth(data.len()) {
-                        return;
+                    match iter.nth(data.len()) {
+                        Some((_, &0xF7)) => (),
+                        _ => return,
                     }
 
-                    system_exclusive_callback(timestamp, global_channel, data);
+                    system_exclusive_callback(timestamp, global_channel, command_value, data);
                 },
                 _ => (),
             };

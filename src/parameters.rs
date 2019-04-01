@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use super::*;
 use super::error::Error;
 
@@ -50,47 +52,47 @@ pub struct Parameters {
 }
 
 impl Parameters {
-    pub fn parse_scene_dump<'a>(&mut self, dump: &[u8]) -> Result<()> {
-        let raw_scene_data: &[u8] = &dump[13..401];
+    pub fn parse_scene_dump<'a>(dump: &[u8]) -> Result<Self> {
+        let mut parsed = Self::default();
 
-        let global_channel_val = raw_scene_data[index_to_data_dump_index(0)];
-        self.global_channel = match global_channel_val {
+        let global_channel_val = dump[index_to_data_dump_index(0)];
+        parsed.global_channel = match global_channel_val {
             n if n < 16 => n,
             n => return Err(Error::InvalidGlobalChannel(n)),
         };
 
-        let control_mode_val = raw_scene_data[index_to_data_dump_index(1)];
-        self.control_mode = ControlMode::from(control_mode_val);
+        let control_mode_val = dump[index_to_data_dump_index(1)];
+        parsed.control_mode = ControlMode::from(control_mode_val);
 
-        let led_mode_val = raw_scene_data[index_to_data_dump_index(2)];
-        self.led_mode = LedMode::from(led_mode_val);
+        let led_mode_val = dump[index_to_data_dump_index(2)];
+        parsed.led_mode = LedMode::from(led_mode_val);
 
         for i in 0..8 {
             let index: usize = 3 + (i * 31);
-            self.groups[i] = parse_group_data(&raw_scene_data, index);
+            parsed.groups[i] = parse_group_data(&dump, index);
         }
 
-        let transport_button_channel_val = raw_scene_data[index_to_data_dump_index(251)];
-        self.transport_button_channel = MidiChannel::from(transport_button_channel_val);
+        let transport_button_channel_val = dump[index_to_data_dump_index(251)];
+        parsed.transport_button_channel = MidiChannel::from(transport_button_channel_val);
 
-        self.track_rewind       = parse_button_data(&raw_scene_data, 252);
-        self.track_fastforward  = parse_button_data(&raw_scene_data, 258);
-        self.cycle              = parse_button_data(&raw_scene_data, 264);
-        self.set                = parse_button_data(&raw_scene_data, 270);
-        self.marker_rewind      = parse_button_data(&raw_scene_data, 276);
-        self.marker_fastforward = parse_button_data(&raw_scene_data, 282);
-        self.rewind             = parse_button_data(&raw_scene_data, 288);
-        self.fastforward        = parse_button_data(&raw_scene_data, 294);
-        self.stop               = parse_button_data(&raw_scene_data, 300);
-        self.play               = parse_button_data(&raw_scene_data, 306);
-        self.record             = parse_button_data(&raw_scene_data, 312);
+        parsed.track_rewind       = parse_button_data(&dump, 252);
+        parsed.track_fastforward  = parse_button_data(&dump, 258);
+        parsed.cycle              = parse_button_data(&dump, 264);
+        parsed.set                = parse_button_data(&dump, 270);
+        parsed.marker_rewind      = parse_button_data(&dump, 276);
+        parsed.marker_fastforward = parse_button_data(&dump, 282);
+        parsed.rewind             = parse_button_data(&dump, 288);
+        parsed.fastforward        = parse_button_data(&dump, 294);
+        parsed.stop               = parse_button_data(&dump, 300);
+        parsed.play               = parse_button_data(&dump, 306);
+        parsed.record             = parse_button_data(&dump, 312);
 
         for i in 0..5 {
             let data_dump_index: usize = index_to_data_dump_index(318 + i);
-            self.custom_daw_assign[i] = raw_scene_data[data_dump_index];
+            parsed.custom_daw_assign[i] = dump[data_dump_index];
         }
 
-        Ok(())
+        Ok(parsed)
     }
 
     pub fn create_scene_dump(&self) -> [u8; 389] {

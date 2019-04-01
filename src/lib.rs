@@ -18,7 +18,7 @@ pub struct KorgNanokontrol2 {
 
 impl KorgNanokontrol2 {
     pub fn connect(&mut self) -> Result<()> {
-        self.connection.open(|_, _, _, _| (), |_, _, _| ())?;
+        self.connection.open(|_, _, _, _| (), |_, _, _, _| ())?;
         Ok(())
     }
 
