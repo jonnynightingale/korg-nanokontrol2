@@ -108,31 +108,35 @@ impl Connection {
         let midi_input = MidiInput::new("input")?;
         let midi_output = MidiOutput::new("output")?;
 
-        let mut input_port: Option<usize> = None;
-        for i in 0..midi_input.port_count() {
-            if midi_input.port_name(i) == Ok("nanoKONTROL2 1 SLIDER/KNOB".to_string()) {
-                input_port = Some(i);
-                break;
+        let mut input_port_option: Option<usize> = None;
+        'input: for i in 0..midi_input.port_count() {
+            if let Ok(ref port_name) = midi_input.port_name(i) {
+                if port_name.contains("nanoKONTROL2") {
+                    input_port_option = Some(i);
+                    break 'input;
+                }
             }
         };
-
-        let mut output_port: Option<usize> = None;
-        for i in 0..midi_output.port_count() {
-            if midi_output.port_name(i) == Ok("nanoKONTROL2 1 CTRL".to_string()) {
-                output_port = Some(i);
-                break;
-            }
+        let input_port = match input_port_option {
+            Some(port_index) => port_index,
+            None => return Err(Error::MidiInputPortNotFound),
         };
 
-        if input_port == None {
-            return Err(Error::MidiInputPortNotFound);
-        }
+        let mut output_port_option: Option<usize> = None;
+        'output: for i in 0..midi_output.port_count() {
+            if let Ok(ref port_name) = midi_output.port_name(i) {
+                if port_name.contains("nanoKONTROL2") {
+                    output_port_option = Some(i);
+                    break 'output;
+                }
+            }
+        };
+        let output_port = match output_port_option {
+            Some(port_index) => port_index,
+            None => return Err(Error::MidiOutputPortNotFound),
+        };
 
-        if output_port == None {
-            return Err(Error::MidiOutputPortNotFound);
-        }
-
-        self.midi_input_connection = midi_input.connect(input_port.unwrap(), "input_port",
+        self.midi_input_connection = midi_input.connect(input_port, "input_port",
             move |timestamp, message, _| {
             let mut iter = message.iter().enumerate();
 
@@ -206,7 +210,7 @@ impl Connection {
             };
         }, ()).ok();
 
-        self.midi_output_connection = midi_output.connect(output_port.unwrap(), "output_port").ok();
+        self.midi_output_connection = midi_output.connect(output_port, "output_port").ok();
 
         Ok(())
     }
