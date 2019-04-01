@@ -108,23 +108,31 @@ impl Connection {
         let midi_input = MidiInput::new("input")?;
         let midi_output = MidiOutput::new("output")?;
 
-        if midi_input.port_count() == 0 {
-            return Err(Error::NoMidiInputPortFound);
+        let mut input_port: Option<usize> = None;
+        for i in 0..midi_input.port_count() {
+            if midi_input.port_name(i) == Ok("nanoKONTROL2 1 SLIDER/KNOB".to_string()) {
+                input_port = Some(i);
+                break;
+            }
+        };
+
+        let mut output_port: Option<usize> = None;
+        for i in 0..midi_output.port_count() {
+            if midi_output.port_name(i) == Ok("nanoKONTROL2 1 CTRL".to_string()) {
+                output_port = Some(i);
+                break;
+            }
+        };
+
+        if input_port == None {
+            return Err(Error::MidiInputPortNotFound);
         }
 
-        if midi_input.port_count() > 1 {
-            return Err(Error::MultipleMidiInputPortsFound);
+        if output_port == None {
+            return Err(Error::MidiOutputPortNotFound);
         }
 
-        if midi_output.port_count() == 0 {
-            return Err(Error::NoMidiOutputPortFound);
-        }
-
-        if midi_output.port_count() > 1 {
-            return Err(Error::MultipleMidiOutputPortsFound);
-        }
-
-        self.midi_input_connection = midi_input.connect(0, "input_port",
+        self.midi_input_connection = midi_input.connect(input_port.unwrap(), "input_port",
             move |timestamp, message, _| {
             let mut iter = message.iter().enumerate();
 
@@ -198,7 +206,7 @@ impl Connection {
             };
         }, ()).ok();
 
-        self.midi_output_connection = midi_output.connect(0, "output_port").ok();
+        self.midi_output_connection = midi_output.connect(output_port.unwrap(), "output_port").ok();
 
         Ok(())
     }

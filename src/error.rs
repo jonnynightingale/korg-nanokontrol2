@@ -10,10 +10,8 @@ pub enum Error {
     MidirInit(midir::InitError),
     MidirPortInfo(midir::PortInfoError),
     MidirSend(midir::SendError),
-    NoMidiInputPortFound,
-    MultipleMidiInputPortsFound,
-    NoMidiOutputPortFound,
-    MultipleMidiOutputPortsFound,
+    MidiInputPortNotFound,
+    MidiOutputPortNotFound,
     InvalidGlobalChannel(u8),
     InvalidControlMode(u8),
     InvalidLedMode(u8),
@@ -27,14 +25,10 @@ impl Display for Error {
             Error::MidirInit(err) => ("Midir Init", err.to_string()),
             Error::MidirPortInfo(err) => ("Midir Init", err.to_string()),
             Error::MidirSend(err) => ("Midir Init", err.to_string()),
-            Error::NoMidiInputPortFound =>
-                ("MIDI input ports", "No MIDI input device was found.".to_string()),
-            Error::MultipleMidiInputPortsFound =>
-                ("MIDI input ports", "Mulitple MIDI input devices were found.".to_string()),
-            Error::NoMidiOutputPortFound =>
-                ("MIDI output ports", "No MIDI output device was found.".to_string()),
-            Error::MultipleMidiOutputPortsFound =>
-                ("MIDI output ports", "Multiple MIDI output devices were found.".to_string()),
+            Error::MidiInputPortNotFound =>
+                ("MIDI input ports", "MIDI input device was not found.".to_string()),
+            Error::MidiOutputPortNotFound =>
+                ("MIDI output ports", "MIDI output device was not found.".to_string()),
             Error::InvalidGlobalChannel(channel) =>
                 ("Invalid global MIDI channel",
                 format!("Channel {} is not a valid global channel. Expected 0-15.", channel)),
@@ -60,10 +54,8 @@ impl std::error::Error for Error {
             Error::MidirInit(ref err) => err.description(),
             Error::MidirPortInfo(ref err) => err.description(),
             Error::MidirSend(ref err) => err.description(),
-            Error::NoMidiInputPortFound => "No MIDI input device was found.",
-            Error::MultipleMidiInputPortsFound => "Mulitple MIDI input devices were found.",
-            Error::NoMidiOutputPortFound => "No MIDI output device was found.",
-            Error::MultipleMidiOutputPortsFound => "Multiple MIDI output devices were found.",
+            Error::MidiInputPortNotFound => "MIDI input device was not found.",
+            Error::MidiOutputPortNotFound => "MIDI output device was not found.",
             Error::InvalidGlobalChannel(_) => "Invalid global MIDI channel.",
             Error::InvalidControlMode(_) => "Invalid control mode.",
             Error::InvalidLedMode(_) => "Invalid LED mode.",
