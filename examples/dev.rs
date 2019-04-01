@@ -5,7 +5,6 @@ use std::time::Duration;
 use std::io::stdin;
 use std::error::Error;
 use korgnanokontrol2::connection::Connection;
-use korgnanokontrol2::parameters::Parameters;
 
 fn main() {
     match run() {
@@ -16,15 +15,13 @@ fn main() {
 
 fn run() -> Result<(), Box<Error>> {
     let mut connection = Connection::new();
-    connection.open(|stamp, message| {
-        if message.len() > 50 {
-            let mut parameters = Parameters::default();
-            parameters.parse_scene_dump(&message).is_err();
-            println!("{:#?}", parameters);
-        } else {
-            println!("{}: {:02X?} (len = {})", stamp, message, message.len());
-        }
-    })?;
+    connection.open(
+        |timestamp, midi_channel, control_change, value|
+        {
+            println!("{}: {:02X?} {:02X?} {:02X?}", timestamp, midi_channel, control_change, value);
+        },
+        |_, _, _| ()
+    )?;
 
     let mut input = String::new();
     loop {
@@ -33,7 +30,7 @@ fn run() -> Result<(), Box<Error>> {
         if input.trim() == "q" {
             break;
         } else if input.trim() == "w" {
-            connection.get_slider_value_raw(0)?;
+            connection.current_scene_data_dump_request(0)?;
         } else {
             sleep(Duration::from_millis(200));
         }

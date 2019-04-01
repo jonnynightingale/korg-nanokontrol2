@@ -18,6 +18,7 @@ pub enum Error {
     InvalidControlMode(u8),
     InvalidLedMode(u8),
     InvalidMidiChannel(u8),
+    ConnectionClosed,
 }
 
 impl Display for Error {
@@ -46,6 +47,7 @@ impl Display for Error {
             Error::InvalidMidiChannel(channel) =>
                 ("Invalid MIDI channel",
                 format!("Channel {} is not a valid global channel. Expected 0-16.", channel)),
+            Error::ConnectionClosed => ("Connection closed", "Connection closed".to_string()),
         };
 
         write!(f, "{} error: {}", error_type, error)
@@ -66,6 +68,7 @@ impl std::error::Error for Error {
             Error::InvalidControlMode(_) => "Invalid control mode.",
             Error::InvalidLedMode(_) => "Invalid LED mode.",
             Error::InvalidMidiChannel(_) => "Invalid MIDI channel.",
+            Error::ConnectionClosed => "Connection closed."
         }
     }
 
