@@ -15,18 +15,21 @@ fn main() {
 }
 
 fn run() -> Result<(), Box<Error>> {
+    let mut params: Parameters = Default::default();
+
     let mut connection = Connection::new();
     connection.open(
         |timestamp, midi_channel, control_change, value| {
             println!("{}: {:02X?} {:02X?} {:02X?}", timestamp, midi_channel, control_change, value);
         },
-        |timestamp, midi_channel, command_value, data| {
+        move |timestamp, midi_channel, command_value, function_id, data| {
             match command_value {
                 0x7F => {
-                    let params = Parameters::parse_scene_dump(&data).unwrap();
+                    params = Parameters::parse_scene_dump(&data).unwrap();
                     println!("{:#?}", params);
                 },
-                _ => println!("{}: {:02X?} {:02X?} {:02X?}", timestamp, midi_channel, command_value, data),
+                _ => println!("{}: {:02X?} {:02X?} {:02X?} {:02X?}", timestamp, midi_channel,
+                    command_value, function_id, data),
             }
         }
     )?;

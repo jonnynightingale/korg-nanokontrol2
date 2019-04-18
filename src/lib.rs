@@ -18,7 +18,16 @@ pub struct KorgNanokontrol2 {
 
 impl KorgNanokontrol2 {
     pub fn connect(&mut self) -> Result<()> {
-        self.connection.open(|_, _, _, _| (), |_, _, _, _| ())?;
+        self.connection.open(
+            |_, _, _, _| (),
+            |timestamp, midi_channel, command_value, function_id, data| {
+                match command_value {
+                    0x40 => (),
+                    0x5F => (),
+                    0x7F => (),
+                    _ => (),
+                }
+            })?;
         Ok(())
     }
 

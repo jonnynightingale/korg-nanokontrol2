@@ -103,7 +103,7 @@ impl Connection {
         mut system_exclusive_callback: G,
     ) -> Result<()> where
         F: FnMut(u64, u8, u8, u8) + Send + 'static,
-        G: FnMut(u64, u8, u8, &[u8]) + Send + 'static {
+        G: FnMut(u64, u8, u8, u8, &[u8]) + Send + 'static {
 
         let midi_input = MidiInput::new("input")?;
         let midi_output = MidiOutput::new("output")?;
@@ -169,8 +169,17 @@ impl Connection {
                         None => return, 
                     };
 
-                    let data = match command_value & 0b0010_0000 == 0x00 {
-                        true => &message[command_index + 1..command_index + 3],
+                    // let function_id = match iter.next() {
+                    //     Some((_, &n)) => n,
+                    //     None => return,
+                    // };
+
+                    let (function_id, data): (u8, &[u8]) =
+                        match command_value & 0b0010_0000 == 0x00 {
+                        true => match iter.next() {
+                            Some((_, &n)) => (n, &[]),
+                            None => return,
+                        }
                         false => {
                             let (data_start_index, num_data): (usize, usize) = match iter.next() {
                                 Some((_, &0x7F)) => {
@@ -189,22 +198,26 @@ impl Connection {
                                     let num = (msb << 7) | lsb;
                                     (index + 2, num)
                                 },
-                                Some((i, &n)) => (i + 2, n as usize),
+                                Some((i, _)) => (i + 2, 1),
+                                None => return,
+                            };
+                            let function_id = match iter.next() {
+                                Some((_, &n)) => n,
                                 None => return,
                             };
                             if message.len() < data_start_index + num_data {
                                 return;
                             }
-                            &message[data_start_index..data_start_index + num_data]
+                            (function_id, &message[data_start_index..data_start_index + num_data])
                         },
                     };
 
-                    match iter.nth(data.len()) {
-                        Some((_, &0xF7)) => (),
-                        _ => return,
+                    if data.last() != Some(&0xF7) {
+                        return;
                     }
 
-                    system_exclusive_callback(timestamp, global_channel, command_value, data);
+                    system_exclusive_callback(timestamp, global_channel, command_value, function_id,
+                        data);
                 },
                 _ => (),
             };
